@@ -227,45 +227,54 @@ public class GoodsController {
     {
         boolean result = true;
 
-        DocumentBuilder documentBuilder;
-        Document document;
-
+        FileOutputStream os;
         try
         {
-            documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            document = documentBuilder.newDocument();
+            os = new FileOutputStream(model.getFile());
         }
-        catch (ParserConfigurationException ex)
+        catch (FileNotFoundException e)
         {
             return false;
         }
 
-        Node root = document.createElement("Database");
-        document.appendChild(root);
-
-        for (GoodsDescription item : model.getAllData()){
-            Element good = document.createElement("Good");
-            Element name = document.createElement("Name");
-            name.setTextContent(item.getGoodsName());
-            Element country = document.createElement("Country");
-            country.setTextContent(item.getImportingCountry());
-            Element volume = document.createElement("Volume");
-            volume.setTextContent(Integer.toString(item.getVolume()));
-            good.appendChild(name);
-            good.appendChild(country);
-            good.appendChild(volume);
-            root.appendChild(good);
-        }
-
+        String headString = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
         try
         {
-            Transformer tr = TransformerFactory.newInstance().newTransformer();
-            DOMSource source = new DOMSource(document);
-            FileOutputStream os = new FileOutputStream(model.getFile());
-            StreamResult result1 = new StreamResult(os);
-            tr.transform(source, result1);
+            os.write(headString.getBytes(), 0, headString.length());
+            String toOutput = "<Database>";
+            os.write(toOutput.getBytes(), 0, toOutput.length());
+            for (GoodsDescription item : model.getAllData()){
+                toOutput = "<Good>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+
+                toOutput = "<Name>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+                toOutput = item.getGoodsName();
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+                toOutput = "</Name>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+
+                toOutput = "<Country>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+                toOutput = item.getImportingCountry();
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+                toOutput = "</Country>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+
+                toOutput = "<Volume>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+                toOutput = Integer.toString(item.getVolume());
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+                toOutput = "</Volume>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+
+                toOutput = "</Good>";
+                os.write(toOutput.getBytes(), 0, toOutput.length());
+            }
+            toOutput = "</Database>";
+            os.write(toOutput.getBytes(), 0, toOutput.length());
         }
-        catch (TransformerException | IOException ex)
+        catch (IOException e)
         {
             return false;
         }
