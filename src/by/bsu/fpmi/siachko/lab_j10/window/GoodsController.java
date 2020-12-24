@@ -5,6 +5,7 @@ import by.bsu.fpmi.siachko.lab_j10.window.findDialog.FindDialogView;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.swing.*;
@@ -283,42 +284,73 @@ public class GoodsController {
         }
 
         File file = chooser.getSelectedFile();
-        Scanner read = null;
-        try
-        {
-            read = new Scanner(file);
-        }
-        catch (FileNotFoundException ex)
-        {
-            return false;
-        }
-
         ArrayList<GoodsDescription> readItems = new ArrayList<>();
 
-        int n;
-        try {
-            n = read.nextInt();
+        try
+        {
+            DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document document = documentBuilder.parse(file);
+
+            Node root = document.getDocumentElement();
+            NodeList goods = root.getChildNodes();
+            for (int i = 0; i < goods.getLength(); i++){
+                Node good = goods.item(i);
+                if (good.getNodeType() != Node.TEXT_NODE){
+                    if (!good.getNodeName().equals("Good")){
+                        return false;
+                    }
+                    NodeList goodProps = good.getChildNodes();
+                    String goodName = "";
+                    boolean hasName = false;
+                    String countryName = "";
+                    boolean hasCountry = false;
+                    int volume = 0;
+                    boolean hasVolume = false;
+                    if (goodProps.getLength() != 3){
+                        return false;
+                    }
+                    for (int j = 0; j < goodProps.getLength(); j++){
+                        Node goodProp = goodProps.item(j);
+                        if (goodProp.getChildNodes().getLength() != 1){
+                            return false;
+                        }
+                        if (goodProp.getNodeType() != Node.TEXT_NODE){
+                            if (goodProp.getNodeName().equals("Name")){
+                                goodName = goodProp.getChildNodes().item(0).getTextContent();
+                                hasName = true;
+                            }
+                            else if (goodProp.getNodeName().equals("Country")){
+                                countryName = goodProp.getChildNodes().item(0).getTextContent();
+                                hasCountry = true;
+                            }
+                            else if (goodProp.getNodeName().equals("Volume")){
+                                volume = Integer.parseInt(goodProp.getChildNodes().item(0).getTextContent());
+                                hasVolume = true;
+                            }
+                        }
+                    }
+                    if (!hasName || !hasCountry || !hasVolume){
+                        return false;
+                    }
+                    readItems.add(new GoodsDescription(goodName, countryName, volume));
+                }
+            }
         }
-        catch (NoSuchElementException | IllegalStateException ex)
+        catch (ParserConfigurationException ex)
         {
             return false;
         }
-
-        for (int i = 0; i < n; i++){
-            String s = "";
-            try
-            {
-                s = read.nextLine();
-                String name = read.nextLine();
-                String country = read.nextLine();
-                int volume = read.nextInt();
-                s = read.nextLine();
-                readItems.add(new GoodsDescription(name, country, volume));
-            }
-            catch (NoSuchElementException | IllegalStateException ex)
-            {
-                return false;
-            }
+        catch (SAXException ex)
+        {
+            return false;
+        }
+        catch (IOException ex)
+        {
+            return false;
+        }
+        catch (NumberFormatException ex)
+        {
+            return false;
         }
 
         model.setAllData(readItems);
