@@ -2,8 +2,20 @@ package by.bsu.fpmi.siachko.lab_j10.window;
 
 import by.bsu.fpmi.siachko.lab_j10.window.dialog.DialogView;
 import by.bsu.fpmi.siachko.lab_j10.window.findDialog.FindDialogView;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 import javax.swing.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
@@ -212,33 +224,51 @@ public class GoodsController {
 
     private boolean saveData()
     {
-        OutputStream os = null;
         boolean result = true;
+
+        DocumentBuilder documentBuilder;
+        Document document;
+
         try
         {
-            os = new FileOutputStream(model.getFile());
-            String s = "";
-            s = Integer.toString(model.getAllData().size());
-            os.write(s.getBytes(), 0, s.length());
-            os.write('\n');
-            for (GoodsDescription item : model.getAllData()){
-                s = item.getGoodsName();
-                os.write(s.getBytes(), 0, s.length());
-                os.write('\n');
-                s = item.getImportingCountry();
-                os.write(s.getBytes(), 0, s.length());
-                os.write('\n');
-                s = Integer.toString(item.getVolume());
-                os.write(s.getBytes(), 0, s.length());
-                os.write('\n');
-                os.write('\n');
-            }
-            os.close();
+            documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            document = documentBuilder.newDocument();
         }
-        catch (IOException ex)
+        catch (ParserConfigurationException ex)
         {
-            result = false;
+            return false;
         }
+
+        Node root = document.createElement("Database");
+        document.appendChild(root);
+
+        for (GoodsDescription item : model.getAllData()){
+            Element good = document.createElement("Good");
+            Element name = document.createElement("Name");
+            name.setTextContent(item.getGoodsName());
+            Element country = document.createElement("Country");
+            country.setTextContent(item.getImportingCountry());
+            Element volume = document.createElement("Volume");
+            volume.setTextContent(Integer.toString(item.getVolume()));
+            good.appendChild(name);
+            good.appendChild(country);
+            good.appendChild(volume);
+            root.appendChild(good);
+        }
+
+        try
+        {
+            Transformer tr = TransformerFactory.newInstance().newTransformer();
+            DOMSource source = new DOMSource(document);
+            FileOutputStream os = new FileOutputStream(model.getFile());
+            StreamResult result1 = new StreamResult(os);
+            tr.transform(source, result1);
+        }
+        catch (TransformerException | IOException ex)
+        {
+            return false;
+        }
+
         model.setModified(false);
         return result;
     }
